@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lunch Slot Allocator</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f4f5f7; margin: 0; padding: 16px; text-align: center; }
+    h2 { margin-bottom: 20px; color: #333; }
+    .slot-card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .slot-title { font-size: 20px; font-weight: bold; margin-bottom: 8px; }
+    .count-display { font-size: 16px; margin-bottom: 12px; color: #555; }
+    .remaining { font-weight: bold; color: #2e7d32; }
+    .full { color: #d32f2f; }
+    button { width: 100%; padding: 16px; font-size: 18px; font-weight: bold; color: white; background: #007bff; border: none; border-radius: 8px; cursor: pointer; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <h2>Lunch Slot Tracker</h2>
+
+  <div class="slot-card">
+    <div class="slot-title">12:30 PM Slot</div>
+    <div class="count-display"><span id="rem-12:30">100</span> remaining (<span id="count-12:30">0</span>/100)</div>
+    <button id="btn-12:30" onclick="assignSlot('12:30')">+ ASSIGN 12:30 PM</button>
+  </div>
+
+  <div class="slot-card">
+    <div class="slot-title">1:00 PM Slot</div>
+    <div class="count-display"><span id="rem-1:00">100</span> remaining (<span id="count-1:00">0</span>/100)</div>
+    <button id="btn-1:00" onclick="assignSlot('1:00')">+ ASSIGN 1:00 PM</button>
+  </div>
+
+  <div class="slot-card">
+    <div class="slot-title">1:30 PM Slot</div>
+    <div class="count-display"><span id="rem-1:30">100</span> remaining (<span id="count-1:30">0</span>/100)</div>
+    <button id="btn-1:30" onclick="assignSlot('1:30')">+ ASSIGN 1:30 PM</button>
+  </div>
+
+  <script>
+    const socket = io();
+
+    function assignSlot(slot) {
+      socket.emit('allocateSlot', slot);
+    }
+
+    socket.on('updateCounts', (data) => {
+      const { counts, limits } = data;
+      for (let slot in counts) {
+        const taken = counts[slot];
+        const limit = limits[slot];
+        const remaining = limit - taken;
+
+        document.getElementById(`count-${slot}`).innerText = taken;
+        const remElem = document.getElementById(`rem-${slot}`);
+        remElem.innerText = remaining;
+        
+        const btn = document.getElementById(`btn-${slot}`);
+        if (remaining <= 0) {
+          remElem.className = 'remaining full';
+          btn.innerText = 'SLOT FULL';
+          btn.disabled = true;
+        } else {
+          remElem.className = 'remaining';
+          btn.innerText = `+ ASSIGN ${slot} PM`;
+          btn.disabled = false;
+        }
+      }
+    });
+  </script>
+</body>
+</html>
