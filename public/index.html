@@ -3,13 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Onam Sadya - Lunch Slot Allocator</title>
+  <title>Onam Sadya - Slot Allocator</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
       --kasavu-gold: #D4AF37;
       --cream-white: #FCFBF7;
-      --deep-gold: #B8860B;
       --marigold-orange: #E65100;
       --marigold-yellow: #FFB300;
       --leaf-green: #2E7D32;
@@ -21,221 +20,199 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: var(--cream-white);
       color: var(--text-dark);
-      margin: 0;
-      padding: 16px;
-      text-align: center;
+      margin: 0; padding: 16px; text-align: center;
       border-top: 8px solid var(--kasavu-gold);
     }
 
-    .header-container {
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 2px dashed var(--kasavu-gold);
+    .header-container { margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px dashed var(--kasavu-gold); }
+    .festive-title { font-size: 22px; font-weight: 800; color: var(--marigold-orange); margin: 4px 0; text-transform: uppercase; }
+    .subtitle { font-size: 13px; font-weight: 600; color: var(--leaf-green); margin: 0; }
+
+    /* Lookup Card */
+    .search-card {
+      background: #FFF8E1; border: 2px solid var(--marigold-yellow);
+      border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align: left;
+    }
+    .search-title { font-weight: 700; font-size: 15px; margin-bottom: 8px; color: var(--marigold-orange); }
+    .search-box { display: flex; gap: 8px; }
+    .search-box input {
+      flex: 1; padding: 12px; font-size: 16px; border: 1px solid #CCC; border-radius: 8px; text-transform: uppercase;
+    }
+    .search-box button {
+      padding: 12px 18px; font-weight: bold; background: var(--marigold-orange); color: white; border: none; border-radius: 8px; cursor: pointer;
     }
 
-    .festive-title {
-      font-size: 24px;
-      font-weight: 800;
-      color: var(--marigold-orange);
-      margin: 6px 0 2px 0;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+    .apt-status {
+      margin-top: 12px; padding: 10px; border-radius: 8px; font-size: 14px; font-weight: 600; background: white; border: 1px solid #E0E0E0;
     }
+    .apt-status.valid { border-color: var(--leaf-green); color: var(--leaf-green); }
+    .apt-status.invalid { border-color: var(--full-red); color: var(--full-red); }
 
-    .subtitle {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--leaf-green);
-      margin: 0;
-    }
-
-    .version-badge {
-      font-size: 11px;
-      color: #777;
-      margin-top: 6px;
-      font-weight: 500;
-    }
-
+    /* Slot Card */
     .slot-card {
-      background: white;
-      border-radius: 16px;
-      padding: 18px 16px;
-      margin-bottom: 16px;
-      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.15);
-      border: 2px solid var(--kasavu-gold);
-      position: relative;
-      overflow: hidden;
+      background: white; border-radius: 14px; padding: 16px; margin-bottom: 14px;
+      border: 2px solid var(--kasavu-gold); box-shadow: 0 4px 10px rgba(212, 175, 55, 0.15);
     }
+    .slot-title { font-size: 18px; font-weight: 700; }
+    .count-display { font-size: 14px; margin: 8px 0; color: #555; }
+    .remaining { font-weight: 800; color: var(--leaf-green); }
+    .remaining.full { color: var(--full-red); }
 
-    .slot-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 4px;
-      background: linear-gradient(90deg, var(--marigold-yellow), var(--marigold-orange), var(--leaf-green));
-    }
-
-    .slot-title {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--text-dark);
-      margin-bottom: 4px;
-    }
-
-    .count-display {
-      font-size: 14px;
-      margin-bottom: 14px;
-      color: #555;
-    }
-
-    .remaining {
-      font-weight: 800;
-      font-size: 17px;
-      color: var(--leaf-green);
-    }
-
-    .remaining.full {
-      color: var(--full-red);
-    }
-
-    .btn-group {
-      display: flex;
-      gap: 8px;
-    }
-
+    .btn-group { display: flex; gap: 8px; margin-top: 10px; }
     button.btn-assign {
-      flex: 3;
-      padding: 14px;
-      font-size: 16px;
-      font-weight: 700;
-      color: white;
+      flex: 3; padding: 12px; font-size: 15px; font-weight: 700; color: white;
       background: linear-gradient(135deg, var(--marigold-yellow), var(--marigold-orange));
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      box-shadow: 0 3px 8px rgba(230, 81, 0, 0.25);
-      text-transform: uppercase;
+      border: none; border-radius: 8px; cursor: pointer;
     }
-
     button.btn-unassign {
-      flex: 1;
-      padding: 14px;
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--full-red);
-      background: #FFEBEE;
-      border: 1px solid var(--full-red);
-      border-radius: 8px;
-      cursor: pointer;
+      flex: 1; padding: 12px; font-size: 13px; font-weight: 700; color: var(--full-red);
+      background: #FFEBEE; border: 1px solid var(--full-red); border-radius: 8px; cursor: pointer;
     }
-
-    button:active {
-      transform: scale(0.97);
-    }
-
-    button:disabled {
-      background: #E0E0E0 !important;
-      color: #9E9E9E !important;
-      border: 1px solid #CCC !important;
-      box-shadow: none !important;
-      cursor: not-allowed;
-    }
-
-    .meta-footer {
-      font-size: 11px;
-      color: #888;
-      margin-top: 16px;
-    }
+    button:disabled { background: #E0E0E0 !allowed; color: #9E9E9E; border: 1px solid #CCC; cursor: not-allowed; }
   </style>
 </head>
 <body>
 
   <div class="header-container">
-    <div class="subtitle">🌼 Happy Onam 🌼</div>
-    <div class="festive-title">Onam Sadya Tokens</div>
-    <div class="version-badge">App v1.2 • Last Sync: <span id="last-updated">--:--:--</span></div>
+    <div class="subtitle">🌼 Onam Sadya Tokens 🌼</div>
+    <div class="festive-title">Apartment Slot Allocator</div>
   </div>
+
+  <!-- Apartment Lookup Section -->
+  <div class="search-card">
+    <div class="search-title">1. Enter Apartment Number:</div>
+    <div class="search-box">
+      <input type="text" id="aptInput" placeholder="e.g. A0103, B0305" list="aptDatalist" />
+      <datalist id="aptDatalist"></datalist>
+      <button onclick="checkApartment()">Verify</button>
+    </div>
+    <div id="aptStatus" class="apt-status" style="display:none;"></div>
+  </div>
+
+  <!-- Slots Section -->
+  <div class="search-title" style="text-align:left; margin-left:4px;">2. Select Lunch Slot:</div>
 
   <div class="slot-card">
     <div class="slot-title">12:30 PM Batch</div>
-    <div class="count-display">
-      <span id="rem-12:30" class="remaining">100</span> slots left (<span id="count-12:30">0</span>/100)
-    </div>
+    <div class="count-display"><span id="rem-12:30" class="remaining">100</span> spots left (<span id="count-12:30">0</span>/100)</div>
     <div class="btn-group">
-      <button id="btn-12:30" class="btn-assign" onclick="assignSlot('12:30')">+ Assign</button>
-      <button id="unbtn-12:30" class="btn-unassign" onclick="unassignSlot('12:30')">- Unassign</button>
+      <button id="btn-12:30" class="btn-assign" onclick="assignSlot('12:30')" disabled>Select Apartment First</button>
+      <button id="unbtn-12:30" class="btn-unassign" onclick="unassignSlot('12:30')" disabled>Unassign</button>
     </div>
   </div>
 
   <div class="slot-card">
     <div class="slot-title">1:00 PM Batch</div>
-    <div class="count-display">
-      <span id="rem-1:00" class="remaining">100</span> slots left (<span id="count-1:00">0</span>/100)
-    </div>
+    <div class="count-display"><span id="rem-1:00" class="remaining">100</span> spots left (<span id="count-1:00">0</span>/100)</div>
     <div class="btn-group">
-      <button id="btn-1:00" class="btn-assign" onclick="assignSlot('1:00')">+ Assign</button>
-      <button id="unbtn-1:00" class="btn-unassign" onclick="unassignSlot('1:00')">- Unassign</button>
+      <button id="btn-1:00" class="btn-assign" onclick="assignSlot('1:00')" disabled>Select Apartment First</button>
+      <button id="unbtn-1:00" class="btn-unassign" onclick="unassignSlot('1:00')" disabled>Unassign</button>
     </div>
   </div>
 
   <div class="slot-card">
     <div class="slot-title">1:30 PM Batch</div>
-    <div class="count-display">
-      <span id="rem-1:30" class="remaining">100</span> slots left (<span id="count-1:30">0</span>/100)
-    </div>
+    <div class="count-display"><span id="rem-1:30" class="remaining">100</span> spots left (<span id="count-1:30">0</span>/100)</div>
     <div class="btn-group">
-      <button id="btn-1:30" class="btn-assign" onclick="assignSlot('1:30')">+ Assign</button>
-      <button id="unbtn-1:30" class="btn-unassign" onclick="unassignSlot('1:30')">- Unassign</button>
+      <button id="btn-1:30" class="btn-assign" onclick="assignSlot('1:30')" disabled>Select Apartment First</button>
+      <button id="unbtn-1:30" class="btn-unassign" onclick="unassignSlot('1:30')" disabled>Unassign</button>
     </div>
   </div>
 
-  <div class="meta-footer">Live WebSockets • Real-Time Synchronization</div>
-
   <script>
     const socket = io();
+    let selectedApt = null;
+    let currentCounts = {};
+    let currentLimits = {};
+
+    socket.on('initData', (data) => {
+      currentCounts = data.counts;
+      currentLimits = data.limits;
+      updateDatalist(data.apartments);
+      updateUI();
+    });
+
+    socket.on('updateCounts', (data) => {
+      currentCounts = data.counts;
+      currentLimits = data.limits;
+      updateDatalist(data.apartments);
+      updateUI();
+    });
+
+    function updateDatalist(apts) {
+      const dl = document.getElementById('aptDatalist');
+      dl.innerHTML = apts.map(a => `<option value="${a.apartment_no}">${a.total_coupons} Coupons ${a.slot_time ? ' (' + a.slot_time + ' PM)' : ''}</option>`).join('');
+    }
+
+    function checkApartment() {
+      const aptVal = document.getElementById('aptInput').value;
+      if (!aptVal) return;
+      socket.emit('lookupApartment', aptVal);
+    }
+
+    socket.on('apartmentResult', (res) => {
+      const statusDiv = document.getElementById('aptStatus');
+      statusDiv.style.display = 'block';
+
+      if (!res.success) {
+        selectedApt = null;
+        statusDiv.className = 'apt-status invalid';
+        statusDiv.innerText = res.message;
+      } else {
+        selectedApt = res.apartment;
+        statusDiv.className = 'apt-status valid';
+        const assignedTxt = selectedApt.slot_time ? ` (Assigned to ${selectedApt.slot_time} PM)` : ' (Unassigned)';
+        statusDiv.innerText = `✅ Apartment ${selectedApt.apartment_no} | ${selectedApt.total_coupons} Coupons Required${assignedTxt}`;
+      }
+      updateUI();
+    });
+
+    socket.on('errorMsg', (msg) => { alert(msg); });
 
     function assignSlot(slot) {
-      socket.emit('allocateSlot', slot);
+      if (!selectedApt) return;
+      socket.emit('assignApartmentSlot', { apartmentNo: selectedApt.apartment_no, targetSlot: slot });
     }
 
     function unassignSlot(slot) {
-      socket.emit('unassignSlot', slot);
+      if (!selectedApt) return;
+      socket.emit('unassignApartmentSlot', selectedApt.apartment_no);
     }
 
-    socket.on('updateCounts', (data) => {
-      const { counts, limits } = data;
-      const now = new Date();
-      document.getElementById('last-updated').innerText = now.toLocaleTimeString();
-
-      for (let slot in counts) {
-        const taken = counts[slot];
-        const limit = limits[slot];
+    function updateUI() {
+      for (let slot in currentCounts) {
+        const taken = currentCounts[slot];
+        const limit = currentLimits[slot];
         const remaining = limit - taken;
 
         document.getElementById(`count-${slot}`).innerText = taken;
         const remElem = document.getElementById(`rem-${slot}`);
         remElem.innerText = remaining;
-        
+
         const assignBtn = document.getElementById(`btn-${slot}`);
         const unassignBtn = document.getElementById(`unbtn-${slot}`);
 
-        // Handle Assign Button state
-        if (remaining <= 0) {
-          remElem.className = 'remaining full';
-          assignBtn.innerText = 'SLOT FULL';
+        if (!selectedApt) {
+          assignBtn.innerText = 'Verify Apartment First';
           assignBtn.disabled = true;
+          unassignBtn.disabled = true;
         } else {
-          remElem.className = 'remaining';
-          assignBtn.innerText = '+ Assign';
-          assignBtn.disabled = false;
-        }
+          const isCurrentAssigned = selectedApt.slot_time === slot;
+          unassignBtn.disabled = !isCurrentAssigned;
 
-        // Handle Unassign Button state (Disable if count is 0)
-        unassignBtn.disabled = (taken <= 0);
+          if (isCurrentAssigned) {
+            assignBtn.innerText = `✓ Selected for ${selectedApt.apartment_no}`;
+            assignBtn.disabled = true;
+          } else if (remaining < selectedApt.total_coupons) {
+            assignBtn.innerText = `Full (Needs ${selectedApt.total_coupons})`;
+            assignBtn.disabled = true;
+          } else {
+            assignBtn.innerText = `+ Assign ${selectedApt.total_coupons} Tokens`;
+            assignBtn.disabled = false;
+          }
+        }
       }
-    });
+    }
   </script>
 </body>
 </html>
