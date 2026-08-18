@@ -56,6 +56,16 @@ io.on('connection', async (socket) => {
   });
 });
 
+// Add this socket handler inside io.on('connection', async (socket) => { ... })
+
+socket.on('unassignSlot', async (slotTime) => {
+  if (slotCounts[slotTime] > 0) {
+    slotCounts[slotTime]--;
+    await updateSlotInDb(slotTime, slotCounts[slotTime]); // Updates Supabase
+    io.emit('updateCounts', { counts: slotCounts, limits: slotLimits });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, async () => {
   await loadCounts();
